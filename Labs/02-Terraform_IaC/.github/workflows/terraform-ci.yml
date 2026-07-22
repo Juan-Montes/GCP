@@ -1,0 +1,66 @@
+name: Terraform CI
+
+# =============================================================================
+#  Pipeline de validación y policy gate para el nivel dev.
+#  fmt -> validate -> plan -> OPA/Conftest. El apply queda para un job aparte
+#  con aprobación manual (no incluido aquí).
+# =============================================================================
+on:
+  pull_request:
+    paths: ["infra/**", "live/**", "policy/**"]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write # necesario para Workload Identity Federation (auth keyless)
+
+jobs:
+  validate-plan-policy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: live/dev/platform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Instalar Terragrunt
+        run: |
+          curl -Lo /usr/local/bin/terragrunt \
+            https://github.com/gruntwork-io/terragrunt/releases/latest/download/terragrunt_linux_amd64
+          chmod +x /usr/local/bin/terragrunt
+
+      - name: Instalar Conftest
+        run: |
+          VER=$(curl -s https://api.github.com/repos/open-policy-agent/conftest/releases/latest \
+            | grep -Po '"tag_name": "v\K[^"]+')
+          curl -Lo conftest.tar.gz \
+            "https://github.com/open-policy-agent/conftest/releases/download/v${VER}/conftest_${VER}_Linux_x86_64.tar.gz"
+          tar xzf conftest.tar.gz conftest
+          sudo mv conftest /usr/local/bin/
+
+      # Auth KEYLESS a GCP: la misma filosofía sin llaves del Nivel 00, pero
+      # ahora la identidad es el pipeline (Workload Identity Federation).
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.TERRAFORM_SA }}
+
+      - name: Formato
+        run: terragrunt hclfmt --terragrunt-check
+
+      - name: Validate
+        run: terragrunt validate
+
+      - name: Plan
+        run: |
+          terragrunt plan -out=tfplan.binary
+          terragrunt show -json tfplan.binary > tfplan.json
+
+      - name: Policy gate (OPA / Conftest)
+        run: conftest test -p ../../../policy tfplan.json

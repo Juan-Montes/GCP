@@ -1,0 +1,64 @@
+# =============================================================================
+#  .gitignore — repositorio GCP (laboratorios DevOps)
+#  Guardar como  ~/GCP/.gitignore
+# =============================================================================
+
+# ── Terraform / Terragrunt ───────────────────────────────────────────────────
+**/.terraform/
+**/.terragrunt-cache/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan.binary
+tfplan.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+
+# El lock de providers SI se versiona (garantiza builds reproducibles):
+!.terraform.lock.hcl
+
+# ── Credenciales — NUNCA subir ───────────────────────────────────────────────
+*.json
+!*.tfvars.json
+!package.json
+!package-lock.json
+*-key.json
+*credentials*.json
+service-account*.json
+*.pem
+*.p12
+.env
+.env.*
+
+# ── Packer ───────────────────────────────────────────────────────────────────
+packer_cache/
+*.pkrvars.hcl
+!example.pkrvars.hcl
+
+# ── Variables locales con datos propios ──────────────────────────────────────
+# (los .tfvars del repo solo contienen IDs de proyecto, no secretos;
+#  si algún día metes datos sensibles, descomenta la línea siguiente)
+# *.tfvars
+
+# ── Sistema operativo / editores ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# ── Salidas temporales ───────────────────────────────────────────────────────
+*.log
+tmp/
+out/
+
+# ── Capturas de pantalla (evidencia local, no versionada por ahora) ──────────
+*.png
+# excepción: la imagen del roadmap que usa el README
+!docs/roadmap.png
