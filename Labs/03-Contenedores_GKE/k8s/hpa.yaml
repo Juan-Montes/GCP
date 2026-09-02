@@ -1,0 +1,23 @@
+# =============================================================================
+#  Nivel 03 · Bloque 4 — Horizontal Pod Autoscaler
+#  Escala los pods de web-app entre 2 y 10 segun el uso de CPU.
+#  El HPA mide utilizacion = CPU real / CPU solicitada (los requests del Bloque 3).
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50    # crea pods cuando el promedio supera 50%
