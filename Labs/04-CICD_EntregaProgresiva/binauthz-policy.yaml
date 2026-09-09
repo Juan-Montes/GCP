@@ -1,0 +1,13 @@
+# =============================================================================
+#  Nivel 04 · Bloque 5 — Politica de Binary Authorization
+#  Regla por defecto: DENEGAR. Allowlist: solo imagenes de lab-images.
+#  globalPolicyEvaluationMode: ENABLE exime las imagenes de sistema de GKE
+#  (imprescindible, o se bloquearian los componentes del propio cluster).
+# =============================================================================
+defaultAdmissionRule:
+  evaluationMode: ALWAYS_DENY
+  enforcementMode: ENFORCED_BLOCK_AND_AUDIT_LOG
+globalPolicyEvaluationMode: ENABLE
+admissionWhitelistPatterns:
+  - namePattern: us-central1-docker.pkg.dev/juan-devops-lab-dev/lab-images/*
+name: projects/juan-devops-lab-dev/policy

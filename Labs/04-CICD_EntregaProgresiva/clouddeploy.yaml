@@ -1,19 +1,29 @@
 # =============================================================================
-#  Nivel 04 · clouddeploy.yaml — el pipeline de entrega como codigo.
-#  Secuencia: staging -> prod. Cada stage usa su perfil de skaffold (overlay).
-#  (El canary y la aprobacion manual se agregan en el Bloque 4.)
+#  Nivel 04 · clouddeploy.yaml (v2) — canary + aprobacion manual en prod.
+#  staging: despliegue directo. prod: canary al 50% -> 100%, con visto bueno humano.
 # =============================================================================
 apiVersion: deploy.cloud.google.com/v1
 kind: DeliveryPipeline
 metadata:
   name: web-app-pipeline
-description: Entrega de web-app (staging -> prod)
+description: Entrega de web-app (staging -> prod con canary)
 serialPipeline:
   stages:
     - targetId: staging
       profiles: [staging]
     - targetId: prod
       profiles: [prod]
+      strategy:
+        canary:
+          # serviceNetworking: canary en GKE sin service mesh (reparte por pods).
+          runtimeConfig:
+            kubernetes:
+              serviceNetworking:
+                service: "web-app"
+                deployment: "web-app"
+          canaryDeployment:
+            percentages: [50]   # fase canary al 50%, luego avanza a stable (100%)
+            verify: false
 ---
 apiVersion: deploy.cloud.google.com/v1
 kind: Target
@@ -28,5 +38,7 @@ kind: Target
 metadata:
   name: prod
 description: Namespace prod del cluster lab-gke
+# Compuerta manual: nada llega a prod sin aprobacion explicita.
+requireApproval: true
 gke:
   cluster: projects/juan-devops-lab-dev/locations/us-central1/clusters/lab-gke
