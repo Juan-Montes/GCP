@@ -1,0 +1,22 @@
+# =============================================================================
+#  Nivel 04 · skaffold.yaml — como se renderizan y despliegan los manifiestos.
+#  Cloud Deploy usa este archivo; cada perfil apunta a un overlay (namespace).
+# =============================================================================
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: web-app
+manifests:
+  kustomize:
+    paths: [k8s/base]
+deploy:
+  kubectl: {}
+profiles:
+  - name: staging
+    manifests:
+      kustomize:
+        paths: [k8s/overlays/staging]
+  - name: prod
+    manifests:
+      kustomize:
+        paths: [k8s/overlays/prod]

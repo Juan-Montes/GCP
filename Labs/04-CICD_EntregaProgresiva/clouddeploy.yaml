@@ -1,0 +1,32 @@
+# =============================================================================
+#  Nivel 04 · clouddeploy.yaml — el pipeline de entrega como codigo.
+#  Secuencia: staging -> prod. Cada stage usa su perfil de skaffold (overlay).
+#  (El canary y la aprobacion manual se agregan en el Bloque 4.)
+# =============================================================================
+apiVersion: deploy.cloud.google.com/v1
+kind: DeliveryPipeline
+metadata:
+  name: web-app-pipeline
+description: Entrega de web-app (staging -> prod)
+serialPipeline:
+  stages:
+    - targetId: staging
+      profiles: [staging]
+    - targetId: prod
+      profiles: [prod]
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: staging
+description: Namespace staging del cluster lab-gke
+gke:
+  cluster: projects/juan-devops-lab-dev/locations/us-central1/clusters/lab-gke
+---
+apiVersion: deploy.cloud.google.com/v1
+kind: Target
+metadata:
+  name: prod
+description: Namespace prod del cluster lab-gke
+gke:
+  cluster: projects/juan-devops-lab-dev/locations/us-central1/clusters/lab-gke

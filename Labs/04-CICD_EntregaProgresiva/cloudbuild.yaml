@@ -1,0 +1,44 @@
+# =============================================================================
+#  Nivel 04 · Bloque 2 — Pipeline de CI (Cloud Build)
+#  Ante un cambio: quality gate -> build (tag = SHA del commit) -> push.
+#  Si cualquier paso falla, el pipeline se detiene y no publica nada.
+# =============================================================================
+substitutions:
+  _REGION: us-central1
+  _REPO: lab-images
+  _IMAGE: web-app
+
+steps:
+  # 1) QUALITY GATE: lint del Dockerfile. --failure-threshold error hace que
+  #    los WARNINGS informen pero solo los ERRORES detengan el build.
+  - id: lint
+    name: hadolint/hadolint:latest-debian
+    entrypoint: hadolint
+    args: ["--failure-threshold", "error", "Dockerfile"]
+
+  # 2) BUILD: imagen etiquetada con el SHA del commit (inmutable, rastreable)
+  #    y tambien con 'latest' por conveniencia.
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:latest
+      - .
+
+  # 3) PUSH: publica al registry (dispara el escaneo de vulnerabilidades).
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}
+
+# La imagen resultante que el pipeline de entrega (Bloque 3) desplegara.
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/${_IMAGE}:$SHORT_SHA
+
+options:
+  logging: CLOUD_LOGGING_ONLY
